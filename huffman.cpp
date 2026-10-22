@@ -49,3 +49,74 @@ void Huffman::generateCodes(Node* root, const string& code, map<char, string>& c
     generateCodes(root->left, code + "0", codes);
     generateCodes(root->right, code + "1", codes);
 }
+
+//writing header
+void Huffman::writeHeader(ofstream& out, const map<char, unsigned>& freqMap) {
+    unsigned uniqueCount = freqMap.size();
+    out.write(reinterpret_cast<const char*>(&uniqueCount), sizeof(uniqueCount));
+    for (const auto& pair : freqMap) {
+        out.put(pair.first);
+        out.write(reinterpret_cast<const char*>(&pair.second), sizeof(pair.second));
+    }
+}
+
+//compression
+void Huffman::compress(const string& inputFile, const string& outputFile) {
+    clock_t start = clock();
+    ifstream in(inputFile, ios::binary);
+    if (!in) {
+        cerr << "Error opening input file for compression." << endl;
+        return;
+    }
+
+    map<char, unsigned> freqMap = countFrequencies(in);
+    if (freqMap.empty()) {
+        ofstream out(outputFile, ios::binary);
+        in.close();
+        cout << "Compression ratio: 0 (empty input)" << endl;
+        return;
+    }
+
+    Node* root = buildTree(freqMap);
+    map<char, string> codes;
+    generateCodes(root, "", codes);
+    ofstream out(outputFile, ios::binary);
+    writeHeader(out, freqMap);
+
+    unsigned padding = 0;
+    unsigned bitCount = 0;
+    char buffer = 0;
+    char ch;
+    while (in.get(ch)) {
+        const string& code = codes[ch];
+        for (char bit : code) {
+            buffer = (buffer << 1) | (bit == '1' ? 1 : 0);
+            if (++bitCount == CHAR_BIT) {
+                out.put(buffer);
+                buffer = 0;
+                bitCount = 0;
+            }
+        }
+    }
+    if (bitCount > 0) {
+        padding = CHAR_BIT - bitCount;
+        buffer <<= padding;
+        out.put(buffer);
+    }
+    out.write(reinterpret_cast<const char*>(&padding), sizeof(padding));
+
+    in.close();
+    out.close();
+    deleteTree(root);
+
+    clock_t end = clock();
+    double timeTaken = double(end - start) / CLOCKS_PER_SEC;
+    ifstream orig(inputFile, ios::binary | ios::ate);
+    ifstream comp(outputFile, ios::binary | ios::ate);
+    double originalSize = orig.tellg();
+    double compressedSize = comp.tellg();
+    orig.close(); comp.close();
+
+    cout << "Compression time: " << timeTaken << " seconds" << endl;
+    cout << "Compression ratio: " << (compressedSize / originalSize) << endl;
+}
