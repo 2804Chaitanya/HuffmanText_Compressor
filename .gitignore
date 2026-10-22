@@ -1,0 +1,27 @@
+# Compiled binaries and executables
+*.exe
+*.out
+*.app
+huffman
+huffman_test
+
+# Object files and libraries
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+
+# Build directories
+build/
+bin/
+out/
+
+# IDE / Editor configuration
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
