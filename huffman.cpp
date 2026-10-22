@@ -38,3 +38,14 @@ void Huffman::deleteTree(Node* root) {
     deleteTree(root->right);
     delete root;
 }
+
+// binary code generation for each character
+void Huffman::generateCodes(Node* root, const string& code, map<char, string>& codes) {
+    if (!root) return;
+    if (!root->left && !root->right) {
+        codes[root->data] = code;
+        return;
+    }
+    generateCodes(root->left, code + "0", codes);
+    generateCodes(root->right, code + "1", codes);
+}
